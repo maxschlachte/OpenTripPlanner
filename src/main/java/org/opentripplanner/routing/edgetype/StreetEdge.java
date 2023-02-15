@@ -99,6 +99,8 @@ public class StreetEdge
 
   private StreetTraversalPermission permission;
 
+  private final StreetTraversalPermission originalPermission;
+
   private int streetClass = CLASS_OTHERPATH;
 
   /**
@@ -160,6 +162,7 @@ public class StreetEdge
     this.walkSafetyFactor = 1.0f;
     this.name = name;
     this.setPermission(permission);
+    this.originalPermission = permission;
     this.setCarSpeed(DEFAULT_CAR_SPEED);
     this.setWheelchairAccessible(true); // accessible by default
     if (geometry != null) {
@@ -554,8 +557,14 @@ public class StreetEdge
     return permission;
   }
 
+  public StreetTraversalPermission getOriginalPermission() { return originalPermission; }
+
   public void setPermission(StreetTraversalPermission permission) {
     this.permission = permission;
+  }
+
+  public void resetPermission() {
+    this.permission = this.originalPermission;
   }
 
   public int getStreetClass() {

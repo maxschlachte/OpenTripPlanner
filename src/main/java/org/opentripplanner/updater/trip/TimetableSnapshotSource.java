@@ -293,6 +293,7 @@ public class TimetableSnapshotSource implements TimetableSnapshotProvider {
             );
             case UNSCHEDULED -> UpdateError.result(tripId, NOT_IMPLEMENTED_UNSCHEDULED);
             case DUPLICATED -> UpdateError.result(tripId, NOT_IMPLEMENTED_DUPLICATED);
+            default -> null;
           };
 
         results.add(result);
