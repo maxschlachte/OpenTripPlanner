@@ -599,6 +599,13 @@
             <version>${google.dagger.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.google.transit</groupId>
+            <artifactId>gtfs-realtime-bindings</artifactId>
+            <version>0.0.4</version>
+        </dependency>
+
+
         <!-- JSON AST, not used much and is a good candidate for removal -->
         <dependency>
             <groupId>com.googlecode.json-simple</groupId>

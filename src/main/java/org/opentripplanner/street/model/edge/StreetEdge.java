@@ -95,6 +95,8 @@ public class StreetEdge
 
   private StreetTraversalPermission permission;
 
+  private final StreetTraversalPermission originalPermission;
+
   /**
    * The speed (meters / sec) at which an automobile can traverse this street segment.
    */
@@ -154,6 +156,7 @@ public class StreetEdge
     this.walkSafetyFactor = 1.0f;
     this.name = name;
     this.setPermission(permission);
+    this.originalPermission = permission;
     this.setCarSpeed(DEFAULT_CAR_SPEED);
     this.setWheelchairAccessible(true); // accessible by default
     if (geometry != null) {
@@ -579,6 +582,14 @@ public class StreetEdge
 
   public void setPermission(StreetTraversalPermission permission) {
     this.permission = permission;
+  }
+
+  public StreetTraversalPermission getOriginalPermission() {
+    return originalPermission;
+  }
+
+  public void resetPermission() {
+    this.permission = this.originalPermission;
   }
 
   /**
