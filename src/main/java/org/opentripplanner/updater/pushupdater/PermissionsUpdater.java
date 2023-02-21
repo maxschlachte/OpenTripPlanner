@@ -20,11 +20,11 @@ public class PermissionsUpdater {
     this.graph = graph;
   }
 
-  static public List<StreetEdge> getTouchedEdges() {
+  public static List<StreetEdge> getTouchedEdges() {
     return touchedEdges;
   }
 
-  static public void resetAllPermissions() {
+  public static void resetAllPermissions() {
     // reset all previously modified edges
     for (StreetEdge edge : touchedEdges) {
       edge.resetPermission();
@@ -35,25 +35,42 @@ public class PermissionsUpdater {
   private enum METHOD {
     SET,
     ADD,
-    REMOVE
+    REMOVE,
   }
 
-  public int setPermissions(Polygon polygon, StreetTraversalPermission permission, StreetTraversalPermission originalPermission) {
+  public int setPermissions(
+    Polygon polygon,
+    StreetTraversalPermission permission,
+    StreetTraversalPermission originalPermission
+  ) {
     LOG.info("run permission push updater and set permission to all edges in polygon.");
     return modifyPermissions(polygon, permission, originalPermission, METHOD.SET);
   }
 
-  public int removePermissions(Polygon polygon, StreetTraversalPermission permission, StreetTraversalPermission originalPermission) {
+  public int removePermissions(
+    Polygon polygon,
+    StreetTraversalPermission permission,
+    StreetTraversalPermission originalPermission
+  ) {
     LOG.info("run permission push updater and remove permission from all edges in polygon.");
     return modifyPermissions(polygon, permission, originalPermission, METHOD.REMOVE);
   }
 
-  public int addPermissions(Polygon polygon, StreetTraversalPermission permission, StreetTraversalPermission originalPermission) {
+  public int addPermissions(
+    Polygon polygon,
+    StreetTraversalPermission permission,
+    StreetTraversalPermission originalPermission
+  ) {
     LOG.info("run permission push updater and add permission to all edges in polygon.");
     return modifyPermissions(polygon, permission, originalPermission, METHOD.ADD);
   }
 
-  private int modifyPermissions(Polygon polygon, StreetTraversalPermission permission, StreetTraversalPermission originalPermission, METHOD method) {
+  private int modifyPermissions(
+    Polygon polygon,
+    StreetTraversalPermission permission,
+    StreetTraversalPermission originalPermission,
+    METHOD method
+  ) {
     int numOfUpdates = 0;
     // get collection of all StreetEdges in graph
     Collection<StreetEdge> streetEdges = graph.getStreetEdges();
@@ -63,7 +80,11 @@ public class PermissionsUpdater {
       if (originalPermission != null) {
         filterByOriginalPermission = edge.getOriginalPermission().allows(originalPermission);
       }
-      if (polygon.contains(edge.getGeometry()) && edge.getPermission() != permission && filterByOriginalPermission) {
+      if (
+        polygon.contains(edge.getGeometry()) &&
+        edge.getPermission() != permission &&
+        filterByOriginalPermission
+      ) {
         numOfUpdates += 1;
         String oldPerm = edge.getPermission().toString();
         switch (method) {
@@ -71,12 +92,14 @@ public class PermissionsUpdater {
           case ADD -> edge.setPermission(edge.getPermission().add(permission));
           case REMOVE -> edge.setPermission(edge.getPermission().remove(permission));
         }
-        LOG.info("{} permission '{}': '{}' to '{}' for edge '{}'.",
+        LOG.info(
+          "{} permission '{}': '{}' to '{}' for edge '{}'.",
           method.toString(),
           permission.toString(),
           oldPerm,
           edge.getPermission().toString(),
-          edge);
+          edge
+        );
         if (!touchedEdges.contains(edge)) {
           touchedEdges.add(edge);
         }

@@ -31,9 +31,9 @@ import org.geojson.FeatureCollection;
 import org.geojson.GeoJsonObject;
 import org.json.simple.JSONObject;
 import org.locationtech.jts.geom.Polygon;
-import org.opentripplanner.standalone.api.OtpServerRequestContext;
-import org.opentripplanner.routing.edgetype.StreetTraversalPermission;
 import org.opentripplanner.routing.edgetype.StreetEdge;
+import org.opentripplanner.routing.edgetype.StreetTraversalPermission;
+import org.opentripplanner.standalone.api.OtpServerRequestContext;
 import org.opentripplanner.updater.pushupdater.PermissionsUpdater;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,6 +60,7 @@ public class Permissions {
     mapper.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
     mapper.configure(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true);
   }
+
   private static final Logger LOG = LoggerFactory.getLogger(Permissions.class);
   private final PermissionsUpdater permissionsPushUpdater;
 
@@ -70,7 +71,7 @@ public class Permissions {
   private enum METHOD {
     ADD,
     REMOVE,
-    SET
+    SET,
   }
 
   /**
@@ -163,60 +164,95 @@ public class Permissions {
     watch.start();
     // processing body
     LOG.info("Retrieved body of type {}: {}", body.getClass(), body);
-    GeoJsonObject geoJson = mapper.readValue((new JSONObject(body)).toString(), GeoJsonObject.class);
+    GeoJsonObject geoJson = mapper.readValue(
+      (new JSONObject(body)).toString(),
+      GeoJsonObject.class
+    );
     LOG.info("Retrieved geoJson: {}", geoJson);
     if (geoJson instanceof FeatureCollection) {
       FeatureCollection featureCollection = (FeatureCollection) geoJson;
-      for(Feature feature : featureCollection.getFeatures()) {
-        StreetTraversalPermission permission = parseFeatureForPermission(feature, PROPERTY_PERMISSION);
+      for (Feature feature : featureCollection.getFeatures()) {
+        StreetTraversalPermission permission = parseFeatureForPermission(
+          feature,
+          PROPERTY_PERMISSION
+        );
         if (permission == null) {
           String permissionStr = feature.getProperty(PROPERTY_PERMISSION);
-          throw new BadRequestException("Unable to parse permission property '" + permissionStr + "', must contain PEDESTRIAN, BICYCLE or CAR!");
+          throw new BadRequestException(
+            "Unable to parse permission property '" +
+            permissionStr +
+            "', must contain PEDESTRIAN, BICYCLE or CAR!"
+          );
         }
         METHOD method = parseFeatureToMethod(feature, PROPERTY_METHOD);
         if (method == null) {
           String methodStr = feature.getProperty(PROPERTY_METHOD);
-          throw new BadRequestException("Unable to parse permission property '" + methodStr + "', must be either SET, ADD or REMOVE");
+          throw new BadRequestException(
+            "Unable to parse permission property '" +
+            methodStr +
+            "', must be either SET, ADD or REMOVE"
+          );
         }
         // if the permission is NONE, and it is issued on an ADD or REMOVE operation skip any further action since nothing should be changed logically
-        if (permission == StreetTraversalPermission.NONE && (method == METHOD.ADD || method == METHOD.REMOVE)) {
+        if (
+          permission == StreetTraversalPermission.NONE &&
+          (method == METHOD.ADD || method == METHOD.REMOVE)
+        ) {
           Map<String, Object> messageObj = new HashMap<>();
-          String requestName = feature.getProperty(PROPERTY_NAME) != null ? feature.getProperty(PROPERTY_NAME) : "unknown";
+          String requestName = feature.getProperty(PROPERTY_NAME) != null
+            ? feature.getProperty(PROPERTY_NAME)
+            : "unknown";
           if (method == METHOD.ADD) {
             messageObj.put("requestName", requestName);
-            messageObj.put("message", "Adding the permission 'NONE' to edges does not modify the edge permissions.");
+            messageObj.put(
+              "message",
+              "Adding the permission 'NONE' to edges does not modify the edge permissions."
+            );
             messageObj.put("updates", 0);
             messageObj.put("method", method.toString());
           } else if (method == METHOD.REMOVE) {
             messageObj.put("requestName", requestName);
-            messageObj.put("message", "Removing the permission 'NONE' from edges does not modify the edge permissions.");
+            messageObj.put(
+              "message",
+              "Removing the permission 'NONE' from edges does not modify the edge permissions."
+            );
             messageObj.put("updates", 0);
             messageObj.put("method", method.toString());
           }
           messages.add(messageObj);
         } else {
-          int numOfUpdates = switch (method) {
-            case REMOVE -> permissionsPushUpdater.removePermissions(
-              (Polygon) convertGeoJsonToJtsGeometry(feature.getGeometry()),
-              permission,
-              parseFeatureForPermission(feature, PROPERTY_ORIGINAL_PERMISSION)
-            );
-            case ADD -> permissionsPushUpdater.addPermissions(
-              (Polygon) convertGeoJsonToJtsGeometry(feature.getGeometry()),
-              permission,
-              parseFeatureForPermission(feature, PROPERTY_ORIGINAL_PERMISSION)
-            );
-            case SET -> permissionsPushUpdater.setPermissions(
-              (Polygon) convertGeoJsonToJtsGeometry(feature.getGeometry()),
-              permission,
-              parseFeatureForPermission(feature, PROPERTY_ORIGINAL_PERMISSION)
-            );
-            default -> 0;
-          };
+          int numOfUpdates =
+            switch (method) {
+              case REMOVE -> permissionsPushUpdater.removePermissions(
+                (Polygon) convertGeoJsonToJtsGeometry(feature.getGeometry()),
+                permission,
+                parseFeatureForPermission(feature, PROPERTY_ORIGINAL_PERMISSION)
+              );
+              case ADD -> permissionsPushUpdater.addPermissions(
+                (Polygon) convertGeoJsonToJtsGeometry(feature.getGeometry()),
+                permission,
+                parseFeatureForPermission(feature, PROPERTY_ORIGINAL_PERMISSION)
+              );
+              case SET -> permissionsPushUpdater.setPermissions(
+                (Polygon) convertGeoJsonToJtsGeometry(feature.getGeometry()),
+                permission,
+                parseFeatureForPermission(feature, PROPERTY_ORIGINAL_PERMISSION)
+              );
+              default -> 0;
+            };
           Map<String, Object> messageObj = new HashMap<>();
-          String requestName = feature.getProperty(PROPERTY_NAME) != null ? feature.getProperty(PROPERTY_NAME) : "unknown";
+          String requestName = feature.getProperty(PROPERTY_NAME) != null
+            ? feature.getProperty(PROPERTY_NAME)
+            : "unknown";
           messageObj.put("requestName", requestName);
-          messageObj.put("message", "Updated the permission of " + numOfUpdates + " edges with permission '" + permission.name() + "'");
+          messageObj.put(
+            "message",
+            "Updated the permission of " +
+            numOfUpdates +
+            " edges with permission '" +
+            permission.name() +
+            "'"
+          );
           messageObj.put("updates", numOfUpdates);
           messageObj.put("method", method.toString());
           messages.add(messageObj);
@@ -228,7 +264,10 @@ public class Permissions {
     LOG.info("Processing time: {}", watch.getTime());
     Map<String, Object> responseObj = new HashMap<>();
     responseObj.put("operations", messages);
-    responseObj.put("message", "Permissions modified, " + numOfOverallEdgeUpdates + " edges updated!");
+    responseObj.put(
+      "message",
+      "Permissions modified, " + numOfOverallEdgeUpdates + " edges updated!"
+    );
     responseObj.put("processingTimeInSeconds", watch.getTime() * 0.001);
     return responseObj;
   }
@@ -244,7 +283,10 @@ public class Permissions {
     };
   }
 
-  private StreetTraversalPermission parseFeatureForPermission(Feature feature, String propertyName) {
+  private StreetTraversalPermission parseFeatureForPermission(
+    Feature feature,
+    String propertyName
+  ) {
     // parse permission
     String permissionStr = feature.getProperty(propertyName);
     StreetTraversalPermission permission = null;
@@ -269,7 +311,10 @@ public class Permissions {
     return permission;
   }
 
-  private StreetTraversalPermission addPermission(StreetTraversalPermission current, StreetTraversalPermission additional) {
+  private StreetTraversalPermission addPermission(
+    StreetTraversalPermission current,
+    StreetTraversalPermission additional
+  ) {
     return current == null ? additional : current.add(additional);
   }
 }

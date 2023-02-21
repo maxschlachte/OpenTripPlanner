@@ -557,7 +557,9 @@ public class StreetEdge
     return permission;
   }
 
-  public StreetTraversalPermission getOriginalPermission() { return originalPermission; }
+  public StreetTraversalPermission getOriginalPermission() {
+    return originalPermission;
+  }
 
   public void setPermission(StreetTraversalPermission permission) {
     this.permission = permission;
