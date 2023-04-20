@@ -86,7 +86,7 @@ public class Permissions {
       Map<String, String> info = new HashMap<>();
       info.put("currentPermission", edge.getPermission().name());
       info.put("originalPermission", edge.getOriginalPermission().name());
-      touchedEdgesObj.put(edge.toString(), info);
+      touchedEdgesObj.put(edge.getDefaultName(), info);
     }
     try {
       String json = mapper.writeValueAsString(touchedEdgesObj);
@@ -100,7 +100,6 @@ public class Permissions {
    * Resets permissions for all edges.
    */
   @DELETE
-  @Path("/reset")
   @Consumes(MediaType.APPLICATION_JSON)
   public Response resetPermissions(
     HashMap<String, Object> body,
@@ -150,7 +149,8 @@ public class Permissions {
     final String PROPERTY_NAME = "name";
     final String PROPERTY_PERMISSION = "permission";
     final String PROPERTY_METHOD = "method";
-    final String PROPERTY_ORIGINAL_PERMISSION = "originalPermission";
+    // TODO: whether or not the edge must be completely within the polygon in contrast to only touching it
+    final String PROPERTY_STRICTLY_WITHIN = "strictlyWithin";
     // define messages list
     List<Map<String, Object>> messages = new ArrayList<>();
     // check if body was passed and has feature key
@@ -172,6 +172,7 @@ public class Permissions {
     if (geoJson instanceof FeatureCollection) {
       FeatureCollection featureCollection = (FeatureCollection) geoJson;
       for (Feature feature : featureCollection.getFeatures()) {
+        LOG.info("Check feature: {}", feature);
         StreetTraversalPermission permission = parseFeatureForPermission(
           feature,
           PROPERTY_PERMISSION
@@ -225,18 +226,15 @@ public class Permissions {
             switch (method) {
               case REMOVE -> permissionsPushUpdater.removePermissions(
                 (Polygon) convertGeoJsonToJtsGeometry(feature.getGeometry()),
-                permission,
-                parseFeatureForPermission(feature, PROPERTY_ORIGINAL_PERMISSION)
+                permission
               );
               case ADD -> permissionsPushUpdater.addPermissions(
                 (Polygon) convertGeoJsonToJtsGeometry(feature.getGeometry()),
-                permission,
-                parseFeatureForPermission(feature, PROPERTY_ORIGINAL_PERMISSION)
+                permission
               );
               case SET -> permissionsPushUpdater.setPermissions(
                 (Polygon) convertGeoJsonToJtsGeometry(feature.getGeometry()),
-                permission,
-                parseFeatureForPermission(feature, PROPERTY_ORIGINAL_PERMISSION)
+                permission
               );
               default -> 0;
             };
@@ -290,6 +288,9 @@ public class Permissions {
     // parse permission
     String permissionStr = feature.getProperty(propertyName);
     StreetTraversalPermission permission = null;
+    if (permissionStr == null) {
+      return permission;
+    }
     String permissionStrNormalized = permissionStr.toLowerCase().replaceAll(" ", "");
     if (permissionStrNormalized.equals("none")) {
       permission = StreetTraversalPermission.NONE;

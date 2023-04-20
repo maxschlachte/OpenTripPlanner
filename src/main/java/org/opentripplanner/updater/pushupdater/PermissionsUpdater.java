@@ -40,35 +40,31 @@ public class PermissionsUpdater {
 
   public int setPermissions(
     Polygon polygon,
-    StreetTraversalPermission permission,
-    StreetTraversalPermission originalPermission
+    StreetTraversalPermission permission
   ) {
     LOG.info("run permission push updater and set permission to all edges in polygon.");
-    return modifyPermissions(polygon, permission, originalPermission, METHOD.SET);
+    return modifyPermissions(polygon, permission, METHOD.SET);
   }
 
   public int removePermissions(
     Polygon polygon,
-    StreetTraversalPermission permission,
-    StreetTraversalPermission originalPermission
+    StreetTraversalPermission permission
   ) {
     LOG.info("run permission push updater and remove permission from all edges in polygon.");
-    return modifyPermissions(polygon, permission, originalPermission, METHOD.REMOVE);
+    return modifyPermissions(polygon, permission, METHOD.REMOVE);
   }
 
   public int addPermissions(
     Polygon polygon,
-    StreetTraversalPermission permission,
-    StreetTraversalPermission originalPermission
+    StreetTraversalPermission permission
   ) {
     LOG.info("run permission push updater and add permission to all edges in polygon.");
-    return modifyPermissions(polygon, permission, originalPermission, METHOD.ADD);
+    return modifyPermissions(polygon, permission, METHOD.ADD);
   }
 
   private int modifyPermissions(
     Polygon polygon,
     StreetTraversalPermission permission,
-    StreetTraversalPermission originalPermission,
     METHOD method
   ) {
     int numOfUpdates = 0;
@@ -76,14 +72,9 @@ public class PermissionsUpdater {
     Collection<StreetEdge> streetEdges = graph.getStreetEdges();
     // set permissions for edges in polygon
     for (StreetEdge edge : streetEdges) {
-      boolean filterByOriginalPermission = true;
-      if (originalPermission != null) {
-        filterByOriginalPermission = edge.getOriginalPermission().allows(originalPermission);
-      }
       if (
         polygon.contains(edge.getGeometry()) &&
-        edge.getPermission() != permission &&
-        filterByOriginalPermission
+        edge.getPermission() != permission
       ) {
         numOfUpdates += 1;
         String oldPerm = edge.getPermission().toString();
